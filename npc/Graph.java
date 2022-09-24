@@ -6,19 +6,29 @@
  */
 package npc;
 
- public class Graph{
+import java.util.ArrayList;
+import java.util.Arrays;
+
+public class Graph{
     private boolean adjMatrix[][];
+    private ArrayList<Integer[]> edges;
     private int numVertices, numEdges;
     
     // getters
     public int getNumVertices(){ return numVertices;}
     public int getNumEdges(){ return numEdges;}
     public boolean[][] getAdjMatrix(){ return adjMatrix;}
+    public ArrayList<Integer[]> getEdges() {return edges;}
 
     public Graph(int numVertices){
         this.numVertices = numVertices;
         this.numEdges = 0;
         this.adjMatrix = new boolean[numVertices][numVertices];
+        this.edges = new ArrayList<>();
+        /* populating array with falses */
+        for (boolean[]row : adjMatrix) {
+            Arrays.fill(row, false);
+        }
     }
 
     /**
@@ -27,9 +37,17 @@ package npc;
      * @param v Node v of the edge
      */
     public void addEdge(int u, int v){
-        this.adjMatrix[u][v] = true;
-        this.adjMatrix[v][u] = true; // undirected graph
-        this.numEdges++;
+        /* same vertex so not incrementing number of edges */
+        if(u==v){
+            this.adjMatrix[u][u] = true;
+        }
+
+        if(u<v){
+            this.adjMatrix[u][v] = true;
+            this.adjMatrix[v][u] = true; // undirected graph
+            this.numEdges++;
+            edges.add(new Integer[]{u,v});
+        }
     }
 
     @Override
