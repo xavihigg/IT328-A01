@@ -11,19 +11,22 @@ import java.util.Arrays;
 
 public class Graph{
     private boolean adjMatrix[][];
-    private ArrayList<Integer[]> edges;
+    private int inDegree[];
+    private ArrayList<int[]> edges;
     private int numVertices, numEdges;
     
     // getters
     public int getNumVertices(){ return numVertices;}
     public int getNumEdges(){ return numEdges;}
     public boolean[][] getAdjMatrix(){ return adjMatrix;}
-    public ArrayList<Integer[]> getEdges() {return edges;}
+    public int[] getInDegree(){ return inDegree;}
+    public ArrayList<int[]> getEdges() {return edges;}
 
     public Graph(int numVertices){
         this.numVertices = numVertices;
         this.numEdges = 0;
         this.adjMatrix = new boolean[numVertices][numVertices];
+        this.inDegree = new int[numVertices]; 
         this.edges = new ArrayList<>();
         /* populating array with falses */
         for (boolean[]row : adjMatrix) {
@@ -45,8 +48,10 @@ public class Graph{
         if(u<v){
             this.adjMatrix[u][v] = true;
             this.adjMatrix[v][u] = true; // undirected graph
+            this.inDegree[u]++;
+            this.inDegree[v]++;
             this.numEdges++;
-            edges.add(new Integer[]{u,v});
+            edges.add(new int[]{u,v});
         }
     }
 
