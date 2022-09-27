@@ -77,9 +77,8 @@ public class kVertexCover {
             neighbors = findNieghbors(g);
             int n = g.getNumVertices();
             int largestDegree = getLargestDegree();
-            // double minCoverSize = Math.ceil((double) n / (largestDegree + 1.0));
-            // int minK = n/2 + 1;
-            int minK = 115;
+            double minCoverSize = Math.ceil((double) n / (largestDegree + 1.0));
+            int minK = (int) minCoverSize;
             ArrayList<Integer> vertexCover = findMinimumVertexCover(graphs.get(i),minK);
             long elapsedTime = System.currentTimeMillis() - startTime;
             System.out.format("G%d(%d, %d) (size=%d, ms=%d) {", i + 1, graphs.get(i).getNumVertices(),
