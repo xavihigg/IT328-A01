@@ -6,6 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 
 public class kVertexCover {
     private ArrayList<Graph> graphs;
@@ -74,10 +76,9 @@ public class kVertexCover {
             long startTime = System.currentTimeMillis();
             
             Graph g = graphs.get(i);
-            neighbors = findNieghbors(g);
             int n = g.getNumVertices();
             int largestDegree = getLargestDegree();
-            double minCoverSize = Math.ceil((double) n / (largestDegree + 1.0));
+            double minCoverSize = n - Math.ceil((double) n / (largestDegree + 1.0));
             int minK = (int) minCoverSize;
             ArrayList<Integer> vertexCover = findMinimumVertexCover(graphs.get(i),minK);
             long elapsedTime = System.currentTimeMillis() - startTime;
@@ -95,261 +96,103 @@ public class kVertexCover {
      */
     public ArrayList<Integer> findMinimumVertexCover(Graph g, int k) {
         int n = g.getNumVertices();
-        ArrayList<ArrayList<Integer>> allVertexCovers = new ArrayList<>();
-        ArrayList<Integer> originalVertexCover = new ArrayList<>();
-        /* populating original cover w/ values */
-        for (int i = 0; i < g.getNumVertices(); i++) {
-            originalVertexCover.add(1);
-        }
-
-        boolean vertexCoverFound = false;
-        int size, min;
-        min = n + 1;
-        /* apply algorithm? */
-        for (int i = 0; i < g.getNumVertices(); i++) {
-            if (vertexCoverFound)
-                break;
-            ArrayList<Integer> cover = new ArrayList<>(originalVertexCover);
-            cover.set(i, 0);
-            cover = removeCoveredVertexes(cover);
-            size = getCoverSize(cover);
-            min = Math.min(size, min);
-            /* while our size is less than or equal to the the minimum vertex cover size */
-            if (size <= k) {
-                allVertexCovers.add(cover);
-                vertexCoverFound = true;
-                break;
-            }
-            for (int j = 0; j < n - k; j++) {
-                cover = addUncoveredNeighbors(cover, j);
-            }
-            size = getCoverSize(cover);
-            min = Math.min(size, min);
-            allVertexCovers.add(cover);
-            if (size <= k) {
-                vertexCoverFound = true;
-                break;
-            }
-        }
-        /* pairwise unions */
-        for (int p = 0; p < allVertexCovers.size(); p++) {
-            if (vertexCoverFound)
-                break;
-            for (int q = p + 1; q < allVertexCovers.size(); q++) {
-                if (vertexCoverFound)
-                    break;
-                ArrayList<Integer> cover = new ArrayList<>(originalVertexCover);
-                for (int j = 0; j < cover.size(); j++) {
-                    if (allVertexCovers.get(p).get(j) == 0 && allVertexCovers.get(q).get(j) == 0) {
-                        cover.set(j, 0);
-                    }
-                }
-
-                cover = removeCoveredVertexes(cover);
-                size = getCoverSize(cover);
-                min = Math.min(size, min);
-                if (size <= k) {
-                    vertexCoverFound = true;
-                    break;
-                }
-                for (int j = 0; j < k; j++) {
-                    cover = addUncoveredNeighbors(cover, j);
-                }
-                size = getCoverSize(cover);
-                min = Math.min(size, min);
-                if (size <= k) {
-                    vertexCoverFound = true;
-                    break;
-                }
-            }
-        }
         ArrayList<Integer> cover = new ArrayList<>();
-        for(int i=allVertexCovers.size()-1;i>=0;i--){
-            int sz = getCoverSize(allVertexCovers.get(i));
-            if(sz == min){
-                cover = allVertexCovers.get(i);
-                break;
-            }
+        ArrayList<int[]> edges = g.getEdges();
+        while(edges.size() != 0){ // while edges remain
+            int vertexToAdd = selectNextVertexToAdd(g, edges, cover);
+            cover.add(vertexToAdd);
+            removeCoveredEdges(vertexToAdd, edges);
         }
-
-        ArrayList<Integer> vertexesInCover = new ArrayList<>();
-        for (int i = 0; i < cover.size(); i++) {
-            if (cover.get(i) == 1) {
-                vertexesInCover.add(i);
-            }
-        }
-
-        return vertexesInCover;
+        Collections.sort(cover);
+        return cover;
     }
 
+    private ArrayList<ArrayList<Integer>> getIncidentEdges(Graph g, ArrayList<int[]> edges, ArrayList<Integer> cover){
+        ArrayList<ArrayList<Integer>> incidentEdges = new ArrayList<>(g.getNumVertices());
+        for(int i=0;i<g.getNumVertices();i++){
+            incidentEdges.add(new ArrayList<>());
+        }
+        for(int[] edge: edges){
+            int u = edge[0];
+            int v = edge[1];
+            
+            if(!cover.contains(v)){
+                ArrayList<Integer> u_val = incidentEdges.get(u);
+                u_val.add(v);
+                incidentEdges.set(u,u_val);
+            }
+            if(!cover.contains(u)){
+                ArrayList<Integer> v_val = incidentEdges.get(v);
+                v_val.add(u);
+                incidentEdges.set(v,v_val);  
+            }
+        }
+        return incidentEdges;
+    }
+
+    private int selectNextVertexToAdd(Graph g, ArrayList<int[]> edges, ArrayList<Integer> cover){
+        ArrayList<ArrayList<Integer>> incidentEdges = getIncidentEdges(g, edges, cover);
+        ArrayList<Integer> verticesWithMaxIncidentEdges = new ArrayList<>();
+        int maxIncidentEdges = 0;
+        for(int i=0;i<g.getNumVertices();i++){
+            int numEdges = incidentEdges.get(i).size();
+            if(numEdges > maxIncidentEdges){
+                verticesWithMaxIncidentEdges.clear();
+                maxIncidentEdges = numEdges;
+            }
+            if(numEdges == maxIncidentEdges){
+                verticesWithMaxIncidentEdges.add(i);
+            }
+        }
+        if(verticesWithMaxIncidentEdges.size() == 1){ 
+            return verticesWithMaxIncidentEdges.get(0);
+        }
+        else{ // two vertices have same # of edges
+            return selectTiedNodes(verticesWithMaxIncidentEdges, incidentEdges);
+        }
+
+    }
+    
+    private int selectTiedNodes(ArrayList<Integer> tiedVertices, ArrayList<ArrayList<Integer>> incidentEdges){
+        ArrayList<ArrayList<Integer>> uncoveredEdges = new ArrayList<>();
+        for(int i=0;i<tiedVertices.size();i++){
+            uncoveredEdges.add(new ArrayList<>(incidentEdges.get(tiedVertices.get(i))));
+        }
+        int maxNumberOfUncoveredEdges = 0;
+        int indexOfMaxNumberOfUncoveredEdges = tiedVertices.get(0);
+        for(int i=0;i<tiedVertices.size();i++){
+            for(int j=i+1;j<tiedVertices.size();j++){
+                Iterator<Integer> it_vertex1 = uncoveredEdges.get(i).iterator();
+                Iterator<Integer> it_vertex2 = uncoveredEdges.get(j).iterator();
+                while(it_vertex1.hasNext() && it_vertex2.hasNext()){
+                    if(it_vertex1.next() == it_vertex2.next()){
+                        it_vertex1.remove();
+                        it_vertex2.remove();
+                    }
+                }
+            }
+            if(uncoveredEdges.get(i).size() > maxNumberOfUncoveredEdges){
+                maxNumberOfUncoveredEdges = uncoveredEdges.get(i).size();
+                indexOfMaxNumberOfUncoveredEdges = tiedVertices.get(i);
+            }
+        }
+        return indexOfMaxNumberOfUncoveredEdges;
+    }
+    private void removeCoveredEdges(int vertex, ArrayList<int[]> edges){
+        Iterator<int[]> it = edges.iterator();
+        while(it.hasNext()){
+            int[] edge = it.next();
+            if(edge[0] == vertex || edge[1] == vertex){
+                it.remove();
+            }
+        }
+    }
     private int getLargestDegree(){
         int largestDegree = 0;
         for(ArrayList<Integer> neighbor: neighbors){
             largestDegree = Math.max(largestDegree, neighbor.size());
         }
         return largestDegree;
-    }
-    /**
-     * Linear search to find the max inDegree of the graph
-     * 
-     * @param inDegrees Array of indegrees of the graph
-     * @return Index of the largest inDegree.
-     */
-    private int getLargestInDegreeIndex(int[] inDegrees) {
-        int largestIndex = 0;
-        for (int i = 1; i < inDegrees.length; i++) {
-            if (inDegrees[i] > inDegrees[largestIndex]) {
-                largestIndex = i;
-            }
-        }
-        return largestIndex;
-    }
-
-    /**
-     * Finds the adjacent neighbors for each node
-     * 
-     * @param g Graph to find the nieghbors of
-     * @return ArrayList of ArraysLists with each row having the indexes of the
-     *         neighbors the vertex is neighbors with.
-     */
-    private ArrayList<ArrayList<Integer>> findNieghbors(Graph g) {
-        boolean[][] adjMatrix = g.getAdjMatrix();
-        for (int i = 0; i < adjMatrix.length; i++) {
-            ArrayList<Integer> neighbor = new ArrayList<Integer>();
-            for (int j = 0; j < adjMatrix[0].length; j++) {
-                if (adjMatrix[i][j]) {
-                    neighbor.add(j);
-                }
-            }
-            neighbors.add(neighbor);
-        }
-        return neighbors;
-    }
-
-    /**
-     * Checks if a given vertex is removable
-     * 
-     * @param neighbor List of neighbors for the current vertex being checked
-     * @param cover    Current state of the cover
-     * @return Boolean reflecting if vertex can be removed
-     */
-    private boolean isRemovable(ArrayList<Integer> neighbor, ArrayList<Integer> cover) {
-        boolean removeable = true;
-        for (int i = 0; i < neighbor.size(); i++) {
-            if (cover.get(neighbor.get(i)) == 0) {
-                removeable = false;
-                break;
-            }
-        }
-        return removeable;
-    }
-
-    /**
-     * Finds the index of the vertex that will remove the most neighbors
-     * 
-     * @param cover Current state of the vertex cover
-     * @return Index of the vertex to remove
-     */
-    private int maxRemoveableIndex(ArrayList<Integer> cover) {
-        int maxRemovableIndex = -1;
-        int max = -1;
-        for (int i = 0; i < cover.size(); i++) {
-            if (cover.get(i) == 1 && isRemovable(neighbors.get(i), cover)) {
-                ArrayList<Integer> newCover = new ArrayList<>(cover);
-                newCover.set(i, 0);
-                int sum = 0;
-                /* calculating number of removable indexes for current vertex */
-                for (int j = 0; j < newCover.size(); j++) {
-                    if (newCover.get(j) == 1 && isRemovable(neighbors.get(j), newCover)) {
-                        sum++;
-                    }
-                }
-                /* new max removable index found, so updating */
-                if (sum > max) {
-                    if (maxRemovableIndex == -1 || neighbors.get(maxRemovableIndex).size() >= neighbors.get(i).size()) {
-                        max = sum;
-                        maxRemovableIndex = i;
-                    }
-                }
-            }
-        }
-        return maxRemovableIndex;
-    }
-
-    /**
-     * Removes maximum removable vertex until the vertex cover has no removable
-     * vertices
-     * 
-     * @param cover Current state of the vertex cover
-     * @return New state of the vertex cover
-     */
-    private ArrayList<Integer> removeCoveredVertexes(ArrayList<Integer> cover) {
-        ArrayList<Integer> newCover = cover;
-        int remIndex = maxRemoveableIndex(newCover);
-        /* removing indexes while possible */
-        while (remIndex != -1) {
-            newCover.set(remIndex, 0);
-            remIndex = maxRemoveableIndex(newCover);
-        }
-
-        return newCover;
-    }
-
-    /**
-     * Adds the uncovered neighbors to the vertex cover, so every edge is covered.
-     * 
-     * @param cover Current state of the vertex cover
-     * @param k     Minimum vertex cover size
-     * @return New state of the vertex cover
-     */
-    private ArrayList<Integer> addUncoveredNeighbors(ArrayList<Integer> cover, int k) {
-        int count = 0;
-        ArrayList<Integer> newCover = new ArrayList<Integer>(cover);
-        for (int i = 0; i < cover.size(); i++) {
-            if (newCover.get(i) == 1) {
-                int sum, index;
-                index = 0;
-                sum = 0;
-                for (int j = 0; j < neighbors.get(i).size(); j++) {
-                    int coverIndex = neighbors.get(i).get(j);
-                    /* setting index as there's a new neighbor to add */
-                    if (newCover.get(coverIndex) == 0) {
-                        index = j;
-                        sum++;
-                    }
-                }
-                int coverIndex = neighbors.get(i).get(index);
-                /* adding new neighbor to cover */
-                if (sum == 1 && cover.get(coverIndex) == 0) {
-                    newCover.set(coverIndex, 1);
-                    newCover.set(i, 0);
-                    newCover = removeCoveredVertexes(newCover); // removing vertexes that are now covered by the
-                                                                // addition of this new neighbor
-                    count++;
-                }
-
-                /* count is larger than maximum k-vertex cover */
-                if (count > k)
-                    break;
-            }
-        }
-        return newCover;
-    }
-
-
-    /**
-     * Gets the cover size (amount of elements w/ value 1)
-     * 
-     * @param cover Vertex cover to get the size of
-     * @return Size of the vertex cover
-     */
-    private int getCoverSize(ArrayList<Integer> cover) {
-        int count = 0;
-        for (int i = 0; i < cover.size(); i++) {
-            if (cover.get(i) == 1)
-                count++;
-        }
-        return count;
     }
 
     /**

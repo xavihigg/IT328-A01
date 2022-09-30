@@ -21,7 +21,6 @@ public class Graph{
     public boolean[][] getAdjMatrix(){ return adjMatrix;}
     public int[] getInDegree(){ return inDegree;}
     public ArrayList<int[]> getEdges() {return edges;}
-
     public Graph(int numVertices){
         this.numVertices = numVertices;
         this.numEdges = 0;
