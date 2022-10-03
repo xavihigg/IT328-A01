@@ -6,11 +6,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 
 public class kVertexCover {
     private ArrayList<Graph> graphs;
+    ArrayList<ArrayList<Integer>> neighbors;
 
     public static void main(String[] args) {
         String fileName;
@@ -27,9 +28,16 @@ public class kVertexCover {
     }
 
     public kVertexCover() {
-        graphs = new ArrayList<Graph>();
+        this.graphs = new ArrayList<Graph>();
+        this.neighbors = new ArrayList<ArrayList<Integer>>();
     }
 
+    /**
+     * Reads in a file of graphs
+     * 
+     * @param inputFileName Filename of the text document
+     * @return Boolean reflecting if could be opened and fileFormatted correctly
+     */
     public boolean readFile(String inputFileName) {
         boolean fileFormatCorrect = true;
         Path path = Paths.get(inputFileName);
@@ -51,7 +59,6 @@ public class kVertexCover {
                     }
                 }
                 graphs.add(g);
-                System.out.print(g);
             }
 
         } catch (IOException e) {
@@ -61,53 +68,48 @@ public class kVertexCover {
         return fileFormatCorrect;
     }
 
+    /**
+     * Finds the vertex cover for each graph and displays an output to the console
+     */
     public void findAllVertexCovers() {
         for (int i = 0; i < graphs.size(); i++) {
             long startTime = System.currentTimeMillis();
-            ArrayList<Integer> vertexCover = findMinimumVertexCover(graphs.get(i));
+            
+            Graph g = graphs.get(i);
+            ArrayList<Integer> vertexCover = findMinimumVertexCover(g);
             long elapsedTime = System.currentTimeMillis() - startTime;
-            System.out.format("G%d(%d, %d) (size=%d, ms=%d) {", i + 1, graphs.get(i).getNumVertices(),
-                    graphs.get(i).getNumEdges(), vertexCover.size(), elapsedTime);
+            System.out.format("G%d(%d, %d) (size=%d, ms=%d) ", i + 1, g.getNumVertices(),
+                    g.getNumEdges(), vertexCover.size(), elapsedTime);
             printVertexCover(vertexCover);
         }
     }
 
-    public ArrayList<Integer> findMinimumVertexCover(Graph g) {
-        int[] inDegree = g.getInDegree();
-        ArrayList<int[]> remainingEdges = g.getEdges();
-        ArrayList<Integer> vertexCover = new ArrayList<>(0);
-
-
-        while (remainingEdges.size() != 0) {
-            int indexToAddToCover = getLargestInDegreeIndex(inDegree);
-            vertexCover.add(indexToAddToCover);
-            /* removing any edges that are covered by this vertex */
-            for (int i = 0; i < remainingEdges.size(); i++) {
-                int[] possiblyCoveredEdge = remainingEdges.get(i);
-                boolean edgeCovered = (indexToAddToCover == possiblyCoveredEdge[0]
-                        || indexToAddToCover == possiblyCoveredEdge[1]);
-                if (edgeCovered) {
-                    inDegree[possiblyCoveredEdge[0]]--;
-                    inDegree[possiblyCoveredEdge[1]]--;
-                    remainingEdges.remove(i);
-                    i--; // staying at same index
-                }
+    public ArrayList<Integer> findMinimumVertexCover(Graph g){
+        int minCoverSize = Integer.MAX_VALUE;
+        ArrayList<Integer> minCover = new ArrayList<>();
+        for(int i=1;i<g.getNumVertices();i++){
+            VertexCover vc = new VertexCover(g);
+            vc.fillCover();
+            vc.removeVertex(i);
+            ArrayList<Integer> cover = vc.findMinimualertexCover();
+            if(cover.size() < minCoverSize){
+                minCoverSize = cover.size();
+                minCover = cover;
+                System.out.print("Size: " + cover.size());
+                printVertexCover(cover);
             }
         }
-
-        for (int i = 0; i < inDegree.length; i++) {
-            /* a vertex wasn't included in the cover, so a cover isn't possible */
-            if (inDegree[i] > 0) {
-                vertexCover = new ArrayList<>();
-                break;
-            }
-        }
-
-        Collections.sort(vertexCover);
-        return vertexCover;
+        Collections.sort(minCover);
+        return minCover;
     }
 
+    /**
+     * Helper function to print a vertex cover for debugging purposes
+     * 
+     * @param vertexCover Vertex Cover to print
+     */
     private void printVertexCover(ArrayList<Integer> vertexCover) {
+        System.out.print("{");
         for (int j = 0; j < vertexCover.size() - 1; j++) {
             System.out.print(vertexCover.get(j) + ", ");
         }
@@ -115,15 +117,5 @@ public class kVertexCover {
             System.out.print(vertexCover.get(vertexCover.size() - 1));
         }
         System.out.print("}\n");
-    }
-
-    private int getLargestInDegreeIndex(int[] inDerees) {
-        int largestIndex = 0;
-        for (int i = 1; i < inDerees.length; i++) {
-            if (inDerees[i] > inDerees[largestIndex]) {
-                largestIndex = i;
-            }
-        }
-        return largestIndex;
     }
 }
