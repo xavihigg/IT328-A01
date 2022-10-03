@@ -76,123 +76,31 @@ public class kVertexCover {
             long startTime = System.currentTimeMillis();
             
             Graph g = graphs.get(i);
-            int n = g.getNumVertices();
-            int largestDegree = getLargestDegree();
-            double minCoverSize = n - Math.ceil((double) n / (largestDegree + 1.0));
-            int minK = (int) minCoverSize;
-            ArrayList<Integer> vertexCover = findMinimumVertexCover(graphs.get(i),minK);
+            ArrayList<Integer> vertexCover = findMinimumVertexCover(g);
             long elapsedTime = System.currentTimeMillis() - startTime;
-            System.out.format("G%d(%d, %d) (size=%d, ms=%d) {", i + 1, graphs.get(i).getNumVertices(),
-                    graphs.get(i).getNumEdges(), vertexCover.size(), elapsedTime);
+            System.out.format("G%d(%d, %d) (size=%d, ms=%d) ", i + 1, g.getNumVertices(),
+                    g.getNumEdges(), vertexCover.size(), elapsedTime);
             printVertexCover(vertexCover);
         }
     }
 
-    /**
-     * Finds the minimum vertex cover of a civer graph
-     * 
-     * @param g Graph to find the vertex cover of.
-     * @return Minimum vertex cover of the Graph g.
-     */
-    public ArrayList<Integer> findMinimumVertexCover(Graph g, int k) {
-        int n = g.getNumVertices();
-        ArrayList<Integer> cover = new ArrayList<>();
-        ArrayList<int[]> edges = g.getEdges();
-        while(edges.size() != 0){ // while edges remain
-            int vertexToAdd = selectNextVertexToAdd(g, edges, cover);
-            cover.add(vertexToAdd);
-            removeCoveredEdges(vertexToAdd, edges);
-        }
-        Collections.sort(cover);
-        return cover;
-    }
-
-    private ArrayList<ArrayList<Integer>> getIncidentEdges(Graph g, ArrayList<int[]> edges, ArrayList<Integer> cover){
-        ArrayList<ArrayList<Integer>> incidentEdges = new ArrayList<>(g.getNumVertices());
-        for(int i=0;i<g.getNumVertices();i++){
-            incidentEdges.add(new ArrayList<>());
-        }
-        for(int[] edge: edges){
-            int u = edge[0];
-            int v = edge[1];
-            
-            if(!cover.contains(v)){
-                ArrayList<Integer> u_val = incidentEdges.get(u);
-                u_val.add(v);
-                incidentEdges.set(u,u_val);
-            }
-            if(!cover.contains(u)){
-                ArrayList<Integer> v_val = incidentEdges.get(v);
-                v_val.add(u);
-                incidentEdges.set(v,v_val);  
+    public ArrayList<Integer> findMinimumVertexCover(Graph g){
+        int minCoverSize = Integer.MAX_VALUE;
+        ArrayList<Integer> minCover = new ArrayList<>();
+        for(int i=1;i<g.getNumVertices();i++){
+            VertexCover vc = new VertexCover(g);
+            vc.fillCover();
+            vc.removeVertex(i);
+            ArrayList<Integer> cover = vc.findMinimualertexCover();
+            if(cover.size() < minCoverSize){
+                minCoverSize = cover.size();
+                minCover = cover;
+                System.out.print("Size: " + cover.size());
+                printVertexCover(cover);
             }
         }
-        return incidentEdges;
-    }
-
-    private int selectNextVertexToAdd(Graph g, ArrayList<int[]> edges, ArrayList<Integer> cover){
-        ArrayList<ArrayList<Integer>> incidentEdges = getIncidentEdges(g, edges, cover);
-        ArrayList<Integer> verticesWithMaxIncidentEdges = new ArrayList<>();
-        int maxIncidentEdges = 0;
-        for(int i=0;i<g.getNumVertices();i++){
-            int numEdges = incidentEdges.get(i).size();
-            if(numEdges > maxIncidentEdges){
-                verticesWithMaxIncidentEdges.clear();
-                maxIncidentEdges = numEdges;
-            }
-            if(numEdges == maxIncidentEdges){
-                verticesWithMaxIncidentEdges.add(i);
-            }
-        }
-        if(verticesWithMaxIncidentEdges.size() == 1){ 
-            return verticesWithMaxIncidentEdges.get(0);
-        }
-        else{ // two vertices have same # of edges
-            return selectTiedNodes(verticesWithMaxIncidentEdges, incidentEdges);
-        }
-
-    }
-    
-    private int selectTiedNodes(ArrayList<Integer> tiedVertices, ArrayList<ArrayList<Integer>> incidentEdges){
-        ArrayList<ArrayList<Integer>> uncoveredEdges = new ArrayList<>();
-        for(int i=0;i<tiedVertices.size();i++){
-            uncoveredEdges.add(new ArrayList<>(incidentEdges.get(tiedVertices.get(i))));
-        }
-        int maxNumberOfUncoveredEdges = 0;
-        int indexOfMaxNumberOfUncoveredEdges = tiedVertices.get(0);
-        for(int i=0;i<tiedVertices.size();i++){
-            for(int j=i+1;j<tiedVertices.size();j++){
-                Iterator<Integer> it_vertex1 = uncoveredEdges.get(i).iterator();
-                Iterator<Integer> it_vertex2 = uncoveredEdges.get(j).iterator();
-                while(it_vertex1.hasNext() && it_vertex2.hasNext()){
-                    if(it_vertex1.next() == it_vertex2.next()){
-                        it_vertex1.remove();
-                        it_vertex2.remove();
-                    }
-                }
-            }
-            if(uncoveredEdges.get(i).size() > maxNumberOfUncoveredEdges){
-                maxNumberOfUncoveredEdges = uncoveredEdges.get(i).size();
-                indexOfMaxNumberOfUncoveredEdges = tiedVertices.get(i);
-            }
-        }
-        return indexOfMaxNumberOfUncoveredEdges;
-    }
-    private void removeCoveredEdges(int vertex, ArrayList<int[]> edges){
-        Iterator<int[]> it = edges.iterator();
-        while(it.hasNext()){
-            int[] edge = it.next();
-            if(edge[0] == vertex || edge[1] == vertex){
-                it.remove();
-            }
-        }
-    }
-    private int getLargestDegree(){
-        int largestDegree = 0;
-        for(ArrayList<Integer> neighbor: neighbors){
-            largestDegree = Math.max(largestDegree, neighbor.size());
-        }
-        return largestDegree;
+        Collections.sort(minCover);
+        return minCover;
     }
 
     /**
@@ -201,6 +109,7 @@ public class kVertexCover {
      * @param vertexCover Vertex Cover to print
      */
     private void printVertexCover(ArrayList<Integer> vertexCover) {
+        System.out.print("{");
         for (int j = 0; j < vertexCover.size() - 1; j++) {
             System.out.print(vertexCover.get(j) + ", ");
         }
