@@ -21,7 +21,7 @@ public class findVCover {
         String fileName;
         /* processing command line args */
         if (args.length == 0) {
-            fileName = "testGraphs2.txt";
+            fileName = "testGraphs.txt";
         } else {
             fileName = args[0];
         }
