@@ -1,10 +1,10 @@
-package npc;
-
 import java.util.ArrayList;
 
 /**
  * Class to represent a given state of a vertex cover.
- * Includes methods for filling the cover to begin, removing a vertex, and finding the best vertex to remove.
+ * Includes methods for filling the cover to begin, removing a vertex, and
+ * finding the best vertex to remove.
+ * 
  * @author: Tom Freier
  */
 public class VertexCover {
@@ -15,6 +15,7 @@ public class VertexCover {
     /**
      * Creates a new VertexCover object to represent the given graph.
      * Initial state of the cover includes every node in the graph
+     * 
      * @param g Graph that the vertex cover will be based on
      */
     public VertexCover(Graph g) {
@@ -26,19 +27,24 @@ public class VertexCover {
 
     /**
      * Copy constructor, creates a deep copy of vcToCopy
-     * @param vcToCopy  VertexCover to create a deap copy of
+     * 
+     * @param vcToCopy VertexCover to create a deap copy of
      */
-    public VertexCover(VertexCover vcToCopy){
-        this.cover = new ArrayList<>(vcToCopy.cover); // need to make a deep copy of the array lists as they may be modified
-        this.adjList = new ArrayList<>(vcToCopy.adjList); 
+    public VertexCover(VertexCover vcToCopy) {
+        this.cover = new ArrayList<>(vcToCopy.cover); // need to make a deep copy of the array lists as they may be
+                                                      // modified
+        this.adjList = new ArrayList<>(vcToCopy.adjList);
         this.g = vcToCopy.g;
     }
 
     /**
      * Getter method for cover
-     * @return  ArrayList of the vertices included in the cover
+     * 
+     * @return ArrayList of the vertices included in the cover
      */
-    public ArrayList<Integer> getCover() {return cover;}
+    public ArrayList<Integer> getCover() {
+        return cover;
+    }
 
     /**
      * Fills the cover so all nodes are included in it
@@ -52,39 +58,41 @@ public class VertexCover {
     /**
      * Removes a given vertex from the cover
      * Precondition: Vertex must be able to be removed from the cover
-     * @param vertexToRemove    
+     * 
+     * @param vertexToRemove
      */
-    public void removeVertex(int vertexToRemove){
+    public void removeVertex(int vertexToRemove) {
         cover.remove(Integer.valueOf(vertexToRemove));
     }
 
     /**
      * Finds the best vertex that can be removed.
-     * The 'best' criteria is the vertex with the lowest degree and all it's edges are covered by another node 
+     * The 'best' criteria is the vertex with the lowest degree and all it's edges
+     * are covered by another node
+     * 
      * @return Vertex to remove or -1 if no vertexes can be removed
      */
-    public ArrayList<Integer> findBestVertexToRemove(){
-        // HashMap<Integer, Integer> degrees = Graph.generateInDegrees(adjList);
+    public ArrayList<Integer> findBestVertexToRemove() {
         ArrayList<Integer> verticesWithMinDegrees = new ArrayList<>();
         int minDegree = Integer.MAX_VALUE;
-        for(int i=0; i<adjList.size();i++){
-            if(cover.contains(i) && vertexCanBeRemoved(i)){
-                // int degree = degrees.get(i);
+        for (int i = 0; i < adjList.size(); i++) {
+            if (cover.contains(i) && vertexCanBeRemoved(i)) {
                 int degree = adjList.get(i).size();
                 /* new minimum found */
-                if(degree < minDegree){ 
+                if (degree < minDegree) {
                     verticesWithMinDegrees.clear();
                     minDegree = degree;
                 }
 
                 /* has minDegree so adding it to the list */
-                if(degree == minDegree){
+                if (degree == minDegree) {
                     verticesWithMinDegrees.add(i);
                 }
             }
         }
         return verticesWithMinDegrees;
     }
+
     /**
      * Determines if every edge this vertex has is covered by another vertex in the
      * cover
@@ -96,9 +104,9 @@ public class VertexCover {
     public boolean vertexCanBeRemoved(int vertex) {
         boolean edgeCovered = true;
         ArrayList<Integer> adjEdges = this.adjList.get(vertex);
-        for(int i=0;i<adjEdges.size();i++){
+        for (int i = 0; i < adjEdges.size(); i++) {
             int otherVertexInEdge = adjEdges.get(i);
-            if(!cover.contains(otherVertexInEdge)){ /* edge isn't covered by another vertex so we can't remove it */
+            if (!cover.contains(otherVertexInEdge)) { /* edge isn't covered by another vertex so we can't remove it */
                 edgeCovered = false;
                 break;
             }

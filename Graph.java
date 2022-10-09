@@ -2,33 +2,25 @@
  * Java program to represent a graph data structure.
  * 
  * Author: @tomfreier
- * Date: 9/23/22
  */
-package npc;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 
 public class Graph{
     private boolean adjMatrix[][];
     private ArrayList<ArrayList<Integer>> adjList;
-    private int inDegree[];
-    private ArrayList<int[]> edges;
     private int numVertices, numEdges;
     
     // getters
     public int getNumVertices(){ return numVertices;}
     public int getNumEdges(){ return numEdges;}
     public boolean[][] getAdjMatrix(){ return adjMatrix;}
-    public int[] getInDegree(){ return inDegree;}
-    public ArrayList<int[]> getEdges() {return edges;}
+    public ArrayList<ArrayList<Integer>> getAdjList(){ return adjList;}
     public Graph(int numVertices){
         this.numVertices = numVertices;
         this.numEdges = 0;
         this.adjMatrix = new boolean[numVertices][numVertices];
-        this.inDegree = new int[numVertices]; 
-        this.edges = new ArrayList<>();
         /* populating array with falses */
         for (boolean[]row : adjMatrix) {
             Arrays.fill(row, false);
@@ -49,10 +41,7 @@ public class Graph{
         if(u<v){
             this.adjMatrix[u][v] = true;
             this.adjMatrix[v][u] = true; // undirected graph
-            this.inDegree[u]++;
-            this.inDegree[v]++;
             this.numEdges++;
-            edges.add(new int[]{u,v});
         }
     }
 
@@ -93,18 +82,5 @@ public class Graph{
         }
 
         return adjList;
-    }
-
-    /**
-     * Generates the indegrees of a given adjacency list
-     * @param adjList   Adjcacency list representation of a graph
-     * @return          HashMap of the indegrees for each node
-     */
-    public static HashMap<Integer, Integer> generateInDegrees(ArrayList<ArrayList<Integer>> adjList){
-        HashMap<Integer, Integer> inDegrees = new HashMap<>();
-        for(int i=0;i<adjList.size();i++){
-            inDegrees.put(i, adjList.size());
-        }
-        return inDegrees;
     }
 }
